@@ -71,8 +71,8 @@ var TileConfig = {
   //   opacity  {number}  0 (transparent) → 1 (fully opaque)
   // ---------------------------------------------------------------------------
   boardOverlay: [
-    { text: "Let Go More and More",  bgImage: "https://i.gifer.com/origin/5b/5b422c794a860c653d9273fda7ef06f2_w200.webp", opacity: 0.3 },
-    { text: "Sinking and Swirling", bgImage: "https://i.gifer.com/origin/9b/9bf27f312f37fc9e7e988d7599a9612e_w200.webp",  opacity: 0.35 },          
+    { text: "Let Go More and More",  bgImage: "https://i.gifer.com/origin/5b/5b422c794a860c653d9273fda7ef06f2_w200.webp", opacity: 0.2 },
+    { text: "Sinking and Swirling", bgImage: "https://i.gifer.com/origin/9b/9bf27f312f37fc9e7e988d7599a9612e_w200.webp",  opacity: 0.3 },          
     { text: "Slipping Away",    bgImage: "https://i.gifer.com/origin/9e/9ea2a8299209bfbd746e648137f9e562_w200.gif",  opacity: 0.35 },
     { text: "So Easy To Drop Deeper",    bgImage: "https://i.gifer.com/origin/df/df4525ed4f916186a0342e0aa08b0b40_w200.webp", opacity: 0.4 },
     { text: "Fuzzy And Floaty More and More",          bgImage: "https://i.gifer.com/origin/9c/9c7bf931cf42e1ab6e36a7bd74aa68d7_w200.webp", opacity: 0.45 },

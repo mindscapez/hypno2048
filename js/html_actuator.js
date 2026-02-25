@@ -28,6 +28,10 @@ function HTMLActuator() {
           self.fitTextToTile(layer, txt);
         }
       }
+      // Re-fit overlay text if it is currently visible.
+      if (self.deepOverlay && self.deepOverlay.style.display !== "none") {
+        self.fitOverlayText();
+      }
     }, 150);
   });
 }
@@ -292,6 +296,35 @@ HTMLActuator.prototype.showDeepOverlay = function (index) {
 
   this.deepOverlay.style.opacity = opacity;
   this.deepOverlay.style.display = "block";
+
+  // Resize the text to fit after the overlay is visible and laid out.
+  this.fitOverlayText();
+};
+
+// Shrink the overlay text font until the entire text block fits inside the
+// visible overlay area.  Starts from the CSS-defined size and steps down 1px
+// at a time until scrollWidth and scrollHeight are both within bounds.
+HTMLActuator.prototype.fitOverlayText = function () {
+  var textEl   = this.deepOverlayText;
+  var container = this.deepOverlay;
+  if (!textEl || !container) return;
+
+  // Reset to the stylesheet default so we always start from the same baseline.
+  textEl.style.fontSize = "";
+
+  // Available dimensions: 90% width (matching CSS) and 85% height.
+  var maxW = container.offsetWidth  * 0.90;
+  var maxH = container.offsetHeight * 0.85;
+  if (maxW <= 0 || maxH <= 0) return;
+
+  var size = parseFloat(window.getComputedStyle(textEl).fontSize) || 72;
+
+  // Step down 1px at a time until the text fits, but never below 8px.
+  while (size > 8) {
+    textEl.style.fontSize = size + "px";
+    if (textEl.scrollWidth <= maxW && textEl.scrollHeight <= maxH) break;
+    size -= 1;
+  }
 };
 
 HTMLActuator.prototype.hideDeepOverlay = function () {
