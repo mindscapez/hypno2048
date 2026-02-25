@@ -282,7 +282,9 @@ var TileAnimations = {
       span.style.position      = "absolute";
       span.style.transform     = "translate(-50%, -50%)";
       span.style.textAlign     = "center";
-      span.style.maxWidth      = "80%";
+      span.style.maxWidth      = "60%";  // 70 % font + some extra safety margin
+      span.style.fontSize      = "70%";  // 70 % of the inherited size set by fitTextToTile
+      span.style.whiteSpace    = "nowrap";
       span.style.visibility    = "hidden";
       span.style.opacity       = "1";
       span.style.pointerEvents = "none";
@@ -298,9 +300,12 @@ var TileAnimations = {
 
       // One full cycle: show → wait durationOn → hide → wait durationOff → repeat
       function cycle() {
-        // Snap to a new random position (20–80% keeps text inside the tile).
-        span.style.left = (20 + Math.random() * 60) + "%";
-        span.style.top  = (20 + Math.random() * 60) + "%";
+        // Anchor point range: 15–85% keeps the 70%-sized span well within bounds.
+        // The span is centered on the anchor (translate -50/-50), so at 15% left
+        // with a span that is at most ~60% wide, the left edge is at ~15-30% = -15%
+        // which is clipped by overflow:hidden on the element.
+        span.style.left = (15 + Math.random() * 70) + "%";
+        span.style.top  = (15 + Math.random() * 70) + "%";
         if (params.textColor) applyTextColor(span, resolveTextColor(params.textColor, whackColorIndex++));
 
         if (fade) {
@@ -366,6 +371,7 @@ var TileAnimations = {
       span.textContent         = fullText;
       span.style.visibility    = "hidden";
       span.style.pointerEvents = "none";
+      span.style.whiteSpace    = "normal";   // allow wrapping at spaces for multi-word text
 
       applyTextColor(span, resolveTextColor(params.textColor || params.color, 0));
       if (params.fontSize)   span.style.fontSize   = params.fontSize;
@@ -456,19 +462,6 @@ var TileAnimations = {
       // Defer until after startDelay so the tile is in the DOM and
       // offsetHeight returns real values.
       element._risefallTimer = setTimeout(function () {
-        var tileH   = element.offsetHeight;
-        var spanH   = span.offsetHeight;
-
-        // Pixel positions for the span's `top` value:
-        //   topIn  — flush with tile top  (fully visible, top)
-        //   botIn  — flush with tile bottom (fully visible, bottom)
-        //   above  — entirely above tile (hidden, for rise/fall)
-        //   below  — entirely below tile (hidden, for rise/fall)
-        var topIn   = 0;
-        var botIn   = tileH - spanH;
-        var above   = -spanH;
-        var below   = tileH;
-        var centerY = (tileH - spanH) / 2;
 
         span.style.visibility = "visible";
         var startTime   = null;
@@ -479,9 +472,27 @@ var TileAnimations = {
           var elapsed = ts - startTime;
           var t, frac, top, amplitude;
 
+          // Re-read tile and span dimensions every frame so the animation
+          // automatically adapts when the window is resized.
+          var tileH = element.offsetHeight;
+          var spanH = span.offsetHeight;
+
+          // Scale the animation duration proportionally to the actual tile
+          // height so traversal speed is visually consistent across sizes.
+          var REFERENCE_H       = 107;
+          var effectiveDuration = (tileH > 0)
+            ? Math.round(duration * REFERENCE_H / tileH)
+            : duration;
+
+          var topIn   = 0;
+          var botIn   = tileH - spanH;
+          var above   = -spanH;
+          var below   = tileH;
+          var centerY = (tileH - spanH) / 2;
+
           // Re-apply textColor at the start of each new full cycle.
           if (params.textColor) {
-            var rfCycle = Math.floor(elapsed / duration);
+            var rfCycle = Math.floor(elapsed / effectiveDuration);
             if (rfCycle !== rfLastCycle) {
               rfLastCycle = rfCycle;
               applyTextColor(span, resolveTextColor(params.textColor, rfCycle));
@@ -489,25 +500,18 @@ var TileAnimations = {
           }
 
           if (direction === "rise") {
-            // Linear: below → above, looping.
-            t   = (elapsed % duration) / duration;
+            t   = (elapsed % effectiveDuration) / effectiveDuration;
             top = below + t * (above - below);
-
           } else if (direction === "fall") {
-            // Linear: above → below, looping.
-            t   = (elapsed % duration) / duration;
+            t   = (elapsed % effectiveDuration) / effectiveDuration;
             top = above + t * (below - above);
-
           } else if (direction === "bounce") {
-            // Triangle wave: botIn → topIn → botIn at constant speed.
-            t    = (elapsed % duration) / duration;
-            frac = t < 0.5 ? t * 2 : 2 - t * 2;   // 0→1→0
+            t    = (elapsed % effectiveDuration) / effectiveDuration;
+            frac = t < 0.5 ? t * 2 : 2 - t * 2;
             top  = botIn * (1 - frac) + topIn * frac;
-
           } else { // "sin"
-            // Cosine curve: starts at bottom, eases smoothly to top and back.
             amplitude = (botIn - topIn) / 2;
-            top = centerY + amplitude * Math.cos(2 * Math.PI * elapsed / duration);
+            top = centerY + amplitude * Math.cos(2 * Math.PI * elapsed / effectiveDuration);
           }
 
           span.style.top       = top + "px";

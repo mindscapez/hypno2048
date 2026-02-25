@@ -8,6 +8,28 @@ function HTMLActuator() {
   this.deepOverlayText  = document.querySelector(".game-deepen-overlay-text");
 
   this.score = 0;
+
+  // Re-fit text on all live tiles whenever the window is resized (e.g. desktop
+  // ↔ mobile breakpoint, or browser window drag).  Debounced 150 ms so we
+  // don't thrash on every pixel of a window drag.
+  var self = this;
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      var layers = document.querySelectorAll(".tile-text-layer");
+      for (var i = 0; i < layers.length; i++) {
+        var layer = layers[i];
+        var txt   = layer.dataset.rawText;
+        if (txt) {
+          // Clear any previous inline font-size so fitTextToTile reads a
+          // fresh tile width rather than an old scaled value.
+          layer.style.fontSize = "";
+          self.fitTextToTile(layer, txt);
+        }
+      }
+    }, 150);
+  });
 }
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
@@ -97,6 +119,8 @@ HTMLActuator.prototype.addTile = function (tile) {
   textLayer.style.height         = "100%";
   textLayer.style.boxSizing      = "border-box";
   textLayer.textContent = TileConfig.getText(rank);
+  var rawText = textLayer.textContent;   // capture before applyAnimation clears it
+  textLayer.dataset.rawText = rawText;   // store for resize re-fitting
   inner.appendChild(textLayer);
 
   // Animation operates on the text layer, not tile-inner directly.
@@ -126,6 +150,70 @@ HTMLActuator.prototype.addTile = function (tile) {
 
   // Put the tile on the board
   this.tileContainer.appendChild(wrapper);
+
+  // Shrink the font so the longest word always fits inside the tile.
+  // Deferred so the element is fully laid out before we measure it.
+  this.fitTextToTile(textLayer, rawText);
+};
+
+// Measure each word in `text` at the tile's current computed font size and
+// shrink the font-size on `textLayer` until the widest word fits without
+// wrapping.  A hidden probe <span> on document.body is used for measurement
+// so we never disturb the live DOM structure.
+HTMLActuator.prototype.fitTextToTile = function (textLayer, text) {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      if (!text || !textLayer.parentNode) return;
+
+      // Read tile width from the CSS layout (unaffected by scale transforms).
+      var tileInner = textLayer.parentNode;
+      var tileW     = parseFloat(window.getComputedStyle(tileInner).width) || 0;
+      if (tileW <= 0) return;
+
+      // 80 % of tile width is the budget for the widest single word.
+      var available = tileW * 0.8;
+
+      // Cap: never larger than 38 % of tile width (scales correctly on all
+      // screen sizes without referencing CSS font-size rules, which can be
+      // unreliable for newly-inserted elements in the same rAF batch).
+      var maxAllowed = tileW * 0.38;
+
+      var computed   = window.getComputedStyle(textLayer);
+      var fontFamily = computed.fontFamily;
+      var fontWeight = computed.fontWeight;
+
+      // Probe at a fixed large size so the calculation is purely geometric.
+      var PROBE_SIZE = 100;
+      var probe = document.createElement("span");
+      probe.style.position   = "absolute";
+      probe.style.top        = "-9999px";
+      probe.style.left       = "-9999px";
+      probe.style.visibility = "hidden";
+      probe.style.whiteSpace = "nowrap";
+      probe.style.fontFamily = fontFamily;
+      probe.style.fontWeight = fontWeight;
+      probe.style.fontSize   = PROBE_SIZE + "px";
+      document.body.appendChild(probe);
+
+      var words    = text.trim().split(/\s+/);
+      var maxWidth = 0;
+      for (var i = 0; i < words.length; i++) {
+        probe.textContent = words[i];
+        var w = probe.getBoundingClientRect().width;
+        if (w > maxWidth) maxWidth = w;
+      }
+      document.body.removeChild(probe);
+
+      if (maxWidth <= 0) return;
+
+      // Size that makes the widest word fill exactly 80 % of the tile width.
+      var targetSize = PROBE_SIZE * available / maxWidth;
+
+      // Clamp: never larger than maxAllowed, never smaller than 6 px.
+      var newSize = Math.max(6, Math.min(maxAllowed, targetSize));
+      textLayer.style.fontSize = Math.floor(newSize) + "px";
+    });
+  });
 };
 
 HTMLActuator.prototype.applyClasses = function (element, classes) {

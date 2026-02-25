@@ -40,7 +40,7 @@ var TileConfig = {
                 animation:"Flash", animationParams: { durationOn: 100, durationOff: 1200, textColor: "alternate" }  },
     128:  { text: "Sink",
                 bgImage: "https://i.gifer.com/origin/89/89ed53123bb01a4eba7397fefc2830d8_w200.webp",
-                animation: "RiseFall", animationParams: { duration: 3000, direction: "fall" } },
+                animation: "RiseFall", animationParams: { duration: 3000, direction: "fall", textColor: "alternate" } },
     256:  { text: "Blank",
                 bgImage: "https://i.gifer.com/origin/12/12a94bd9daec21697527d5a99bddc24b_w200.webp", 
                 animation: "Whackamole", animationParams: { durationOn: 100, tilesUnsync: true, durationOff: 300, textColor: "alternate" }   },
@@ -49,7 +49,7 @@ var TileConfig = {
                 animation: "Appear_and_fade", animationParams: { duration: 1100, textColor: "alternate" }   },
     1024: { text: "Drop",
                 bgImage: "https://i.gifer.com/origin/9b/9bf27f312f37fc9e7e988d7599a9612e_w200.webp",
-                animation: "RiseFall", animationParams: { duration: 500, direction: "fall" } },
+                animation: "RiseFall", animationParams: { duration: 800, direction: "fall" } },
     2048: { text: "SURRENDER",
                 bgImage: "https://media.tenor.com/eBl9Op1iop4AAAAM/hypnosis-hypnotized.gif",    
                 animation:"Flash", animationParams: { durationOn: 200, durationOff: 200}  }
