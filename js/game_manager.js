@@ -43,12 +43,16 @@ GameManager.prototype.setup = function () {
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+    this.overlayIndex = (previousState.overlayIndex !== undefined && previousState.overlayIndex !== null) ? previousState.overlayIndex : null;
+    this.deepenLevel = previousState.deepenLevel || 0;
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
+    this.overlayIndex = null;
+    this.deepenLevel = 0;
 
     // Add the initial tiles
     this.addStartTiles();
@@ -89,11 +93,12 @@ GameManager.prototype.actuate = function () {
   }
 
   this.actuator.actuate(this.grid, {
-    score:      this.score,
-    over:       this.over,
-    won:        this.won,
-    bestScore:  this.storageManager.getBestScore(),
-    terminated: this.isGameTerminated()
+    score:       this.score,
+    over:        this.over,
+    won:         this.won,
+    bestScore:   this.storageManager.getBestScore(),
+    terminated:   this.isGameTerminated(),
+    overlayIndex: this.overlayIndex
   });
 
 };
@@ -105,7 +110,13 @@ GameManager.prototype.serialize = function () {
     score:       this.score,
     over:        this.over,
     won:         this.won,
-    keepPlaying: this.keepPlaying
+    // Serialize keepPlaying as a plain boolean — this.keepPlaying may be the
+    // prototype method (before the button is ever pressed), which serializes
+    // as undefined and reloads as undefined (falsy). Combined with won=true
+    // that would make isGameTerminated() permanently true after a page reload.
+    keepPlaying:  !!this.keepPlaying,
+    overlayIndex: this.overlayIndex,
+    deepenLevel:  this.deepenLevel
   };
 };
 
@@ -180,10 +191,17 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
+    // Lock input for the duration of the slide animation so fast repeated
+    // inputs don't fire before tiles have finished moving. Any key/swipe
+    // events that arrive while locked are silently discarded (not queued).
+    var slideDuration = (typeof TileConfig !== "undefined" && TileConfig.slideSpeed)
+                          ? TileConfig.slideSpeed : 100;
+    this.inputManager.lock(slideDuration);
+
     this.addRandomTile();
 
     if (!this.movesAvailable()) {
-      this.over = true; // Game over!
+      this.clearLowestTiles(); // Fall deeper instead of game over
     }
 
     this.actuate();
@@ -269,4 +287,51 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
 GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
+};
+
+// When the board is full, remove the 4 lowest-value tiles and set up the
+// full-board overlay so the player can keep going ("fall deeper").
+GameManager.prototype.clearLowestTiles = function () {
+  var tiles = [];
+  this.grid.eachCell(function (x, y, tile) {
+    if (tile) tiles.push(tile);
+  });
+
+  // Sort ascending so tiles[0..3] are the 4 smallest.
+  tiles.sort(function (a, b) { return a.value - b.value; });
+
+  // Advance the deepen counter first so deepenLevel 1 = first fill, 2 = second, etc.
+  this.deepenLevel = (this.deepenLevel || 0) + 1;
+
+  // Advance through the boardOverlay array — one entry per board-fill.
+  // Wraps when the end of the array is reached so the cycle repeats.
+  var overlays = TileConfig.boardOverlay;
+  this.overlayIndex = (this.deepenLevel - 1) % overlays.length;
+
+  // Delete the 4 smallest tiles to open up space.
+  var toRemove = tiles.slice(0, 4);
+  for (var i = 0; i < toRemove.length; i++) {
+    this.grid.removeTile(toRemove[i]);
+  }
+
+  // Clear mergedFrom on every remaining tile so the actuator doesn't render
+  // ghost "source" tiles at now-empty cell positions. Without this, the merge
+  // animation sources appear at old positions that may have just been cleared,
+  // making the board look full when it isn't.
+  this.grid.eachCell(function (x, y, tile) {
+    if (tile) tile.mergedFrom = null;
+  });
+
+  // Reset all termination flags so the game definitely continues.
+  // - this.over:        already false (only ever set false now), but explicit.
+  // - this.won:         a 2048 merge could have happened on this same move;
+  //                     clear it so isGameTerminated() stays false.
+  // - this.keepPlaying: reset to false so the win-message check won't misfire
+  //                     if won flips true again later.
+  this.over        = false;
+  this.won         = false;
+  this.keepPlaying = false;
+
+  // Hide the win/lose message if it was showing.
+  this.actuator.continueGame();
 };

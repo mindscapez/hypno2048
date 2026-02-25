@@ -1,5 +1,7 @@
 function KeyboardInputManager() {
   this.events = {};
+  this.locked = false;   // true while tiles are sliding; move events are dropped
+  this._lockTimer = null;
 
   if (window.navigator.msPointerEnabled) {
     //Internet Explorer 10 style
@@ -31,6 +33,26 @@ KeyboardInputManager.prototype.emit = function (event, data) {
   }
 };
 
+// Prevent move events for `ms` milliseconds (slide animation window).
+// Any events that arrive during the lock are silently discarded — not queued.
+KeyboardInputManager.prototype.lock = function (ms) {
+  this.locked = true;
+  if (this._lockTimer) clearTimeout(this._lockTimer);
+  var self = this;
+  this._lockTimer = setTimeout(function () {
+    self.locked = false;
+    self._lockTimer = null;
+  }, ms);
+};
+
+KeyboardInputManager.prototype.unlock = function () {
+  this.locked = false;
+  if (this._lockTimer) {
+    clearTimeout(this._lockTimer);
+    this._lockTimer = null;
+  }
+};
+
 KeyboardInputManager.prototype.listen = function () {
   var self = this;
 
@@ -58,7 +80,7 @@ KeyboardInputManager.prototype.listen = function () {
     if (!modifiers) {
       if (mapped !== undefined) {
         event.preventDefault();
-        self.emit("move", mapped);
+        if (!self.locked) self.emit("move", mapped);
       }
     }
 
@@ -79,7 +101,7 @@ KeyboardInputManager.prototype.listen = function () {
 
   gameContainer.addEventListener(this.eventTouchstart, function (event) {
     if ((!window.navigator.msPointerEnabled && event.touches.length > 1) ||
-        event.targetTouches > 1) {
+        event.targetTouches.length > 1) {
       return; // Ignore if touching with more than 1 finger
     }
 
@@ -92,15 +114,15 @@ KeyboardInputManager.prototype.listen = function () {
     }
 
     event.preventDefault();
-  });
+  }, { passive: false });
 
   gameContainer.addEventListener(this.eventTouchmove, function (event) {
     event.preventDefault();
-  });
+  }, { passive: false });
 
   gameContainer.addEventListener(this.eventTouchend, function (event) {
     if ((!window.navigator.msPointerEnabled && event.touches.length > 0) ||
-        event.targetTouches > 0) {
+        event.targetTouches.length > 0) {
       return; // Ignore if still touching with one or more fingers
     }
 
@@ -122,7 +144,9 @@ KeyboardInputManager.prototype.listen = function () {
 
     if (Math.max(absDx, absDy) > 10) {
       // (right : left) : (down : up)
-      self.emit("move", absDx > absDy ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
+      if (!self.locked) {
+        self.emit("move", absDx > absDy ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
+      }
     }
   });
 };

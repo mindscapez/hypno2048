@@ -3,6 +3,9 @@ function HTMLActuator() {
   this.scoreContainer   = document.querySelector(".score-container");
   this.bestContainer    = document.querySelector(".best-container");
   this.messageContainer = document.querySelector(".game-message");
+  this.deepOverlay      = document.querySelector(".game-deepen-overlay");
+  this.deepOverlayImg   = document.querySelector(".game-deepen-overlay-img");
+  this.deepOverlayText  = document.querySelector(".game-deepen-overlay-text");
 
   this.score = 0;
 }
@@ -23,6 +26,12 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
  
     self.updateScore(metadata.score);
     self.updateBestScore(metadata.bestScore);
+
+    if (metadata.overlayIndex !== null && metadata.overlayIndex !== undefined) {
+      self.showDeepOverlay(metadata.overlayIndex);
+    } else {
+      self.hideDeepOverlay();
+    }
 
     if (metadata.terminated) {
       if (metadata.over) {
@@ -63,36 +72,35 @@ HTMLActuator.prototype.addTile = function (tile) {
 
   inner.classList.add("tile-inner");
 
-  // assign strings by value
-  // inner.textContent = tile.value;
+  // Make inner a stacking context so the bg-layer and text-layer
+  // can be positioned relative to it.
+  inner.style.position = "relative";
+
   var rank = tile.value;
-  var tileContent = "";
-  if (rank == 2) {
-    tileContent = "Breathe";
-  } else if (rank == 4) {
-    tileContent = "Relax";
-  } else if (rank == 8) {
-    tileContent = "Focus";
-  } else if (rank == 16) {
-    tileContent = "Drift";
-  } else if (rank == 32) {
-    tileContent = "Melt";
-  } else if (rank == 64) {
-    tileContent = "Sleep";
-  } else if (rank == 128) {
-    tileContent = "Sink";
-  } else if (rank == 256) {
-    tileContent = "Blank";
-  } else if (rank == 512) {
-    tileContent = "Empty";
-  } else if (rank == 1024) {
-    tileContent = "Fall";
-  } else if (rank == 2048) {
-    tileContent = "Drop";
-  } else {
-    tileContent = "Deeper";
-  }
-  inner.textContent = tileContent;
+
+  // Layer 1 (z-index 0): background color + optional image.
+  // Sits above the CSS background color but below the text.
+  TileConfig.applyBackground(inner, rank);
+
+  // Layer 2 (z-index 1): text wrapper — flex, fills the tile.
+  // All text content and animations live inside this div so they
+  // always render above the background image layer.
+  var textLayer = document.createElement("div");
+  textLayer.className            = "tile-text-layer";
+  textLayer.style.position       = "relative";
+  textLayer.style.zIndex         = "1";
+  textLayer.style.display        = "flex";
+  textLayer.style.alignItems     = "center";
+  textLayer.style.justifyContent = "center";
+  textLayer.style.lineHeight     = "1.2";
+  textLayer.style.width          = "100%";
+  textLayer.style.height         = "100%";
+  textLayer.style.boxSizing      = "border-box";
+  textLayer.textContent = TileConfig.getText(rank);
+  inner.appendChild(textLayer);
+
+  // Animation operates on the text layer, not tile-inner directly.
+  TileConfig.applyAnimation(textLayer, rank);
 
   if (tile.previousPosition) {
     // Make sure that the tile gets rendered in the previous position first
@@ -166,4 +174,38 @@ HTMLActuator.prototype.clearMessage = function () {
   // IE only takes one value to remove at a time.
   this.messageContainer.classList.remove("game-won");
   this.messageContainer.classList.remove("game-over");
+};
+
+HTMLActuator.prototype.showDeepOverlay = function (index) {
+  if (!this.deepOverlay) return;
+
+  var overlays = (TileConfig.boardOverlay && TileConfig.boardOverlay.length)
+                   ? TileConfig.boardOverlay : [];
+  var cfg     = (index !== null && index !== undefined && overlays[index]) || {};
+  var opacity = (cfg.opacity !== undefined) ? cfg.opacity : 0.5;
+
+  // Background color (boardOverlay entries don't have bgColor, but guard anyway)
+  this.deepOverlay.style.backgroundColor = cfg.bgColor || "transparent";
+
+  // Background image
+  if (cfg.bgImage && this.deepOverlayImg) {
+    this.deepOverlayImg.src              = cfg.bgImage;
+    this.deepOverlayImg.style.display    = "block";
+    this.deepOverlayImg.style.objectFit  = (cfg.bgImageStyle && cfg.bgImageStyle.objectFit) || "cover";
+  } else if (this.deepOverlayImg) {
+    this.deepOverlayImg.src           = "";
+    this.deepOverlayImg.style.display = "none";
+  }
+
+  // Text
+  if (this.deepOverlayText) {
+    this.deepOverlayText.textContent = cfg.text || TileConfig.defaultText;
+  }
+
+  this.deepOverlay.style.opacity = opacity;
+  this.deepOverlay.style.display = "block";
+};
+
+HTMLActuator.prototype.hideDeepOverlay = function () {
+  if (this.deepOverlay) this.deepOverlay.style.display = "none";
 };

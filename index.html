@@ -2,10 +2,105 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>2@48</title>
+  <title>Hypno2048</title>
 
   <link href="style/main.css" rel="stylesheet" type="text/css">
   <link rel="shortcut icon" href="favicon.ico">
+
+  <style>
+    /* ── CSS custom-property palette (light defaults, overridden below) ── */
+    :root {
+      --page-bg:            #faf8ef;
+      --page-color:         #776e65;
+      --container-bg:       #bbada0;
+      --grid-cell-bg:       rgba(238,228,218,0.35);
+      --game-msg-bg:        rgba(238,228,218,0.5);
+      --game-msg-color:     #776e65;
+      --hr-color:           rgba(119,110,101,0.3);
+    }
+
+    /* Auto dark: honour OS preference unless the user picks Light mode */
+    @media (prefers-color-scheme: dark) {
+      html:not(.light-mode) {
+        --page-bg:        #1e1c14;
+        --page-color:     #c5b8a8;
+        --container-bg:   #5a4d43;
+        --grid-cell-bg:   rgba(80,62,50,0.70);
+        --game-msg-bg:    rgba(20,18,12,0.88);
+        --game-msg-color: #e0d0bc;
+        --hr-color:       rgba(197,184,168,0.20);
+      }
+    }
+
+    /* Explicit dark */
+    html.dark-mode {
+      --page-bg:        #1e1c14;
+      --page-color:     #c5b8a8;
+      --container-bg:   #5a4d43;
+      --grid-cell-bg:   rgba(80,62,50,0.70);
+      --game-msg-bg:    rgba(20,18,12,0.88);
+      --game-msg-color: #e0d0bc;
+      --hr-color:       rgba(197,184,168,0.20);
+    }
+
+    /* Apply the palette */
+    html, body             { background: var(--page-bg)  !important; color: var(--page-color) !important; }
+    .score-container,
+    .best-container        { background: var(--container-bg) !important; }
+    .game-container        { background: var(--container-bg) !important; }
+    .grid-cell             { background: var(--grid-cell-bg) !important; }
+    .game-message          { background: var(--game-msg-bg)  !important;
+                             color:      var(--game-msg-color) !important; }
+    a                      { color: var(--page-color); }
+    hr                     { border-bottom-color: var(--hr-color) !important; }
+
+    /* ── Theme-mode dropdown ──────────────────────────────────────────── */
+    .theme-mode-select {
+      float: right;
+      height: 40px;
+      padding: 0 10px;
+      margin-left: 9px;
+      border-radius: 3px;
+      border: none;
+      background: #8f7a66;
+      color: #f9f6f2;
+      font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    /* ── Full-board deepen overlay ────────────────────────────────────── */
+    .game-deepen-overlay {
+      display: none;
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 50;          /* above grid (1), below game-message (100) */
+      pointer-events: none; /* clicks fall through to tiles */
+      overflow: hidden;
+      border-radius: 6px;
+    }
+    .game-deepen-overlay-img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .game-deepen-overlay-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 72px;
+      font-weight: bold;
+      text-align: center;
+      width: 90%;
+      line-height: 1.1;
+      color: #fff;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.9);
+      pointer-events: none;
+    }
+  </style>
   <link rel="apple-touch-icon" href="meta/apple-touch-icon.png">
   <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x1096.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone 5+ -->
   <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x920.png"  media="(device-width: 320px) and (device-height: 480px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone, retina -->
@@ -18,26 +113,35 @@
 </head>
 <body>
   <div class="container">
-    <div class="heading">
-      <h1 class="title">2@48</h1>
+    <div class="heading"><table width="100%"><tr>
+      <td>
+      <H1>Hypno2048</H1></td>
+      <td align="right">
       <div class="scores-container">
         <div class="score-container">0</div>
         <div class="best-container">0</div>
-      </div>
+      </div></td></tr></table>
     </div>
-
-    <div class="above-game">
-      <p class="game-intro">Focus on the words and fall <strong>deep in trance!</strong></p>
-      <a class="restart-button">New Trance</a>
+    <div class="above-game"><table><tr>
+      <td>Swipe or use arrow keys combine matching tiles.  Focus on the words and fall <strong>deep in trance!</strong>
+      </td><td><a class="restart-button">New&nbsp;Trance</a>
+      </td><td><select id="theme-mode" class="theme-mode-select">
+        <option value="auto">Auto</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select></td></tr></table>
     </div>
-
     <div class="game-container">
       <div class="game-message">
-        <p></p>
         <div class="lower">
 	        <a class="keep-playing-button">Yes</a>
           <a class="retry-button">Go deeper</a>
         </div>
+      </div>
+
+      <div class="game-deepen-overlay">
+        <img class="game-deepen-overlay-img" src="" alt="" />
+        <div class="game-deepen-overlay-text"></div>
       </div>
 
       <div class="grid-container">
@@ -71,28 +175,54 @@
 
       </div>
     </div>
-
-    <p class="game-explanation">
-      <!-- <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles. When two tiles with the same word touch, they <strong>merge into one!</strong> -->
-    </p>
-    <!-- <hr> -->
     <p>
-      When you are ready, you will be able to <strong>wake</strong> at your own pace, feeling refreshed and rejuvenated, awake and alert.
+    When you are ready, you will be able to <strong>wake</strong> at your own pace, feeling refreshed and rejuvenated, awake and alert.
     </p>
-    <hr>
+    <p class="game-explanation">
+    How to play: Use your arrow keys or swipe gestures to move the tiles. When two tiles with the same words touch, they merge into one!  See how high you can score before dropping into trance!
+    </p>
     <p>
     <strong class="important">Note:</strong> This site is <em>not</em> the official version of 2048, which can be found at <a href="http://git.io/2048">http://git.io/2048.</a> This is a derivative version based on <strong>LadyLollipop's Hypnotic 2048</strong>.
     </p>
     <hr>
     <p>
-    Modified by DreamingEmma. Original source code by <a href="http://gabrielecirulli.com" target="_blank">Gabriele Cirulli.</a> Based on <a href="https://itunes.apple.com/us/app/1024!/id823499224" target="_blank">1024 by Veewo Studio</a> and conceptually similar to <a href="http://asherv.com/threes/" target="_blank">Threes by Asher Vollmer.</a>
+    Forked from the modified version by <a href="https://github.com/DreamingEmma/DreamingEmma.github.io" target="_blank">DreamingEmma</a>. Original source code by <a href="http://gabrielecirulli.com" target="_blank">Gabriele Cirulli.</a> Based on <a href="https://itunes.apple.com/us/app/1024!/id823499224" target="_blank">1024 by Veewo Studio</a> and conceptually similar to <a href="http://asherv.com/threes/" target="_blank">Threes by Asher Vollmer.</a>
     </p>
   </div>
+
+  <script>
+    /* ── Theme-mode bootstrap (runs before render to avoid flash) ──── */
+    (function () {
+      var KEY = "2048-theme-mode";
+      var select = document.getElementById("theme-mode");
+      var html   = document.documentElement;
+
+      function applyMode(mode) {
+        html.classList.remove("dark-mode", "light-mode");
+        if (mode === "dark")  html.classList.add("dark-mode");
+        if (mode === "light") html.classList.add("light-mode");
+      }
+
+      var saved = localStorage.getItem(KEY) || "auto";
+      if (select) select.value = saved;
+      applyMode(saved);
+
+      if (select) {
+        select.addEventListener("change", function () {
+          var mode = select.value;
+          localStorage.setItem(KEY, mode);
+          applyMode(mode);
+        });
+      }
+    })();
+  </script>
 
   <script src="js/bind_polyfill.js"></script>
   <script src="js/classlist_polyfill.js"></script>
   <script src="js/animframe_polyfill.js"></script>
   <script src="js/keyboard_input_manager.js"></script>
+  <script src="js/tile_animations.js"></script>
+  <script src="js/tile_config.js"></script>
   <script src="js/html_actuator.js"></script>
   <script src="js/grid.js"></script>
   <script src="js/tile.js"></script>
