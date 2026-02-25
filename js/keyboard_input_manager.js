@@ -88,6 +88,18 @@ KeyboardInputManager.prototype.listen = function () {
     if (!modifiers && event.which === 82) {
       self.restart.call(self, event);
     }
+
+    // T key × 5 within 2 s activates test mode
+    if (!modifiers && event.which === 84) {
+      self._tCount = (self._tCount || 0) + 1;
+      clearTimeout(self._tTimer);
+      if (self._tCount >= 5) {
+        self._tCount = 0;
+        self.emit("testMode");
+      } else {
+        self._tTimer = setTimeout(function () { self._tCount = 0; }, 2000);
+      }
+    }
   });
 
   // Respond to button presses

@@ -9,6 +9,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
+  this.inputManager.on("testMode", this.activateTestMode.bind(this));
 
   this.setup();
 }
@@ -287,6 +288,35 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
 GameManager.prototype.positionsEqual = function (first, second) {
   return first.x === second.x && first.y === second.y;
+};
+
+// Test mode (T×5): clear the board and place one tile of every configured
+// rank so every tile animation and style can be inspected at a glance.
+GameManager.prototype.activateTestMode = function () {
+  // Wipe every cell.
+  var self = this;
+  this.grid.eachCell(function (x, y, tile) {
+    if (tile) self.grid.removeTile(tile);
+  });
+
+  // Place one tile per rank in rank order, at random available cells.
+  var ranks = Object.keys(TileConfig.tiles).map(Number).sort(function (a, b) { return a - b; });
+  for (var i = 0; i < ranks.length; i++) {
+    var cell = this.grid.randomAvailableCell();
+    if (!cell) break; // board full (shouldn't happen with 16 cells and 11 ranks)
+    this.grid.insertTile(new Tile(cell, ranks[i]));
+  }
+
+  // Reset termination state so the board is fully interactive.
+  this.score        = 0;
+  this.over         = false;
+  this.won          = false;
+  this.keepPlaying  = false;
+  this.overlayIndex = null;
+  this.deepenLevel  = 0;
+
+  this.actuator.continueGame();
+  this.actuate();
 };
 
 // When the board is full, remove the 4 lowest-value tiles and set up the
