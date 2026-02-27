@@ -77,7 +77,7 @@ var TileConfig = {
     { text: "So Easy To Drop Deeper",    bgImage: "https://i.gifer.com/origin/df/df4525ed4f916186a0342e0aa08b0b40_w200.webp", opacity: 0.4 },
     { text: "Fuzzy And Floaty More and More",          bgImage: "https://i.gifer.com/origin/9c/9c7bf931cf42e1ab6e36a7bd74aa68d7_w200.webp", opacity: 0.45 },
     { text: "Mind Melting Away", bgImage: "https://i.gifer.com/origin/89/89ebf67f4ecc214a42168f8dfd065572_w200.webp", opacity: 0.5 },
-    { text: "Sleep Now",          bgImage: "https://i.makeagif.com/media/8-24-2023/rrtGly.gif",                        opacity: 0.55 },
+    { text: "Sleep Now",          bgImage: "https://i.makeagif.com/media/8-24-2023/rrtGly.gif",                        opacity: 0.4 },
     { text: "Sink So Deep",           bgImage: "https://i.gifer.com/origin/89/89ed53123bb01a4eba7397fefc2830d8_w200.webp", opacity: 0.6 },
     { text: "Empty and Blank",          bgImage: "https://i.gifer.com/origin/6e/6ebe3326095d85bd912fdd416d929abc_w200.webp",  opacity: 0.7 },
     { text: "Drop Deep",           bgImage: "https://i.gifer.com/origin/9b/9bf27f312f37fc9e7e988d7599a9612e_w200.webp", opacity: 0.75 },

@@ -46,6 +46,7 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = previousState.keepPlaying;
     this.overlayIndex = (previousState.overlayIndex !== undefined && previousState.overlayIndex !== null) ? previousState.overlayIndex : null;
     this.deepenLevel = previousState.deepenLevel || 0;
+    this.testModeActive = false;
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
@@ -54,6 +55,7 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = false;
     this.overlayIndex = null;
     this.deepenLevel = 0;
+    this.testModeActive = false;
 
     // Add the initial tiles
     this.addStartTiles();
@@ -73,7 +75,7 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? 2 : 4;
+    var value = 2;
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -293,7 +295,15 @@ GameManager.prototype.positionsEqual = function (first, second) {
 // Test mode (T×5): clear the board and place one tile of every configured
 // rank so every tile animation and style can be inspected at a glance.
 GameManager.prototype.activateTestMode = function () {
-  // Wipe every cell.
+  if (this.testModeActive) {
+    // Subsequent T×5: advance the overlay by one step.
+    this.deepenLevel = (this.deepenLevel || 0) + 1;
+    this.overlayIndex = (this.deepenLevel - 1) % TileConfig.boardOverlay.length;
+    this.actuate();
+    return;
+  }
+
+  // First T×5: wipe the board and place one tile per rank.
   var self = this;
   this.grid.eachCell(function (x, y, tile) {
     if (tile) self.grid.removeTile(tile);
@@ -314,6 +324,7 @@ GameManager.prototype.activateTestMode = function () {
   this.keepPlaying  = false;
   this.overlayIndex = null;
   this.deepenLevel  = 0;
+  this.testModeActive = true;
 
   this.actuator.continueGame();
   this.actuate();
