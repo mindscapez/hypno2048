@@ -94,6 +94,32 @@
       display: none;
     }
 
+    /* Landscape focus: board left, sidebar right */
+    html.focus-mode.landscape .container {
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "board heading"
+        "board controls";
+      column-gap: 16px;
+      align-items: start;
+      width: auto;
+    }
+
+    html.focus-mode.landscape .game-container {
+      grid-area: board;
+      margin-top: 0 !important;
+    }
+
+    html.focus-mode.landscape .heading {
+      grid-area: heading;
+    }
+
+    html.focus-mode.landscape .above-game {
+      grid-area: controls;
+    }
+
     /* ── Full-board deepen overlay ────────────────────────────────────── */
     .game-deepen-overlay {
       display: none;
@@ -251,6 +277,12 @@
 
       function computeScale() {
         if (!html.classList.contains("focus-mode")) return;
+        // Apply landscape layout before measuring so offsetWidth/Height reflect it.
+        if (window.innerWidth > window.innerHeight) {
+          html.classList.add("landscape");
+        } else {
+          html.classList.remove("landscape");
+        }
         // Reset to 1 so we can measure the natural (un-scaled) dimensions.
         html.style.setProperty("--focus-scale", "1");
         var naturalW = container.offsetWidth  || 500;
@@ -269,7 +301,7 @@
           btn.textContent = "Exit Focus";
           computeScale();
         } else {
-          html.classList.remove("focus-mode");
+          html.classList.remove("focus-mode", "landscape");
           html.style.removeProperty("--focus-scale");
           btn.textContent = "Focus";
         }
