@@ -71,6 +71,29 @@
       vertical-align: middle;
     }
 
+    /* ── Focus mode ─────────────────────────────────────────────────────── */
+    html.focus-mode body {
+      position: fixed !important;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    html.focus-mode .container {
+      transform: scale(var(--focus-scale, 1));
+      transform-origin: center center;
+      margin: 0;
+    }
+
+    html.focus-mode .container > p,
+    html.focus-mode .container > hr {
+      display: none;
+    }
+
     /* ── Full-board deepen overlay ────────────────────────────────────── */
     .game-deepen-overlay {
       display: none;
@@ -125,6 +148,7 @@
     <div class="above-game"><table width="100%">
       <tr>Swipe or use arrow keys combine matching tiles.  Focus on the words and fall <strong>deep in trance!</strong>
       </tr><tr><td><a class="restart-button">New&nbsp;Trance</a>
+      </td><td><button id="focus-btn" class="theme-mode-select">Focus</button>
       </td><td><select id="theme-mode" class="theme-mode-select">
         <option value="auto">Auto</option>
         <option value="light">Light</option>
@@ -213,6 +237,54 @@
           localStorage.setItem(KEY, mode);
           applyMode(mode);
         });
+      }
+    })();
+  </script>
+
+  <script>
+    /* ── Focus mode toggle ──────────────────────────────────────────── */
+    (function () {
+      var FOCUS_KEY = "2048-focus-mode";
+      var btn       = document.getElementById("focus-btn");
+      var html      = document.documentElement;
+      var container = document.querySelector(".container");
+
+      function computeScale() {
+        if (!html.classList.contains("focus-mode")) return;
+        // Reset to 1 so we can measure the natural (un-scaled) dimensions.
+        html.style.setProperty("--focus-scale", "1");
+        var naturalW = container.offsetWidth  || 500;
+        var naturalH = container.offsetHeight || 650;
+        var scale = Math.min(
+          (window.innerWidth  - 24) / naturalW,
+          (window.innerHeight - 24) / naturalH
+        );
+        scale = Math.max(0.3, Math.min(scale, 4));
+        html.style.setProperty("--focus-scale", scale);
+      }
+
+      function applyFocus(on) {
+        if (on) {
+          html.classList.add("focus-mode");
+          btn.textContent = "Exit Focus";
+          computeScale();
+        } else {
+          html.classList.remove("focus-mode");
+          html.style.removeProperty("--focus-scale");
+          btn.textContent = "Focus";
+        }
+        localStorage.setItem(FOCUS_KEY, on ? "1" : "0");
+      }
+
+      btn.addEventListener("click", function () {
+        applyFocus(!html.classList.contains("focus-mode"));
+      });
+
+      window.addEventListener("resize", computeScale);
+
+      // Restore preference on load.
+      if (localStorage.getItem(FOCUS_KEY) === "1") {
+        applyFocus(true);
       }
     })();
   </script>
