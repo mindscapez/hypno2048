@@ -98,12 +98,13 @@
     html.focus-mode.landscape .container {
       display: grid;
       grid-template-columns: auto var(--sidebar-width, 180px);
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto auto;
       grid-template-areas:
         "board heading"
         "board controls";
       column-gap: 16px;
       align-items: start;
+      align-content: start;
       width: auto;
     }
 
@@ -140,9 +141,9 @@
       box-sizing: border-box;
     }
 
-    /* H1: scale with sidebar width, no overflow */
+    /* H1: scale with sidebar width, capped so it doesn't grow too large */
     html.focus-mode.landscape h1 {
-      font-size: calc(var(--sidebar-width, 180px) * 0.16) !important;
+      font-size: min(calc(var(--sidebar-width, 180px) * 0.16), 38px) !important;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -168,7 +169,7 @@
       height: auto !important;
       line-height: 1.2 !important;
       padding: 4px 6px !important;
-      font-size: calc(var(--sidebar-width, 180px) * 0.11) !important;
+      font-size: min(calc(var(--sidebar-width, 180px) * 0.11), 22px) !important;
       min-width: 0;
       margin-top: 0 !important;
     }
@@ -178,7 +179,7 @@
     html.focus-mode.landscape .best-container::after {
       position: static !important;
       order: -1;
-      font-size: calc(var(--sidebar-width, 180px) * 0.075) !important;
+      font-size: min(calc(var(--sidebar-width, 180px) * 0.075), 14px) !important;
       line-height: 1.2 !important;
       width: auto !important;
     }
@@ -195,7 +196,7 @@
       height: auto !important;
       line-height: 1.4 !important;
       padding: 4px 8px !important;
-      font-size: calc(var(--sidebar-width, 180px) * 0.085) !important;
+      font-size: min(calc(var(--sidebar-width, 180px) * 0.085), 16px) !important;
       text-align: center;
     }
 
@@ -357,8 +358,8 @@
       function computeScale() {
         if (!html.classList.contains("focus-mode")) return;
 
-        var PAD        = 24;   // px breathing room around the scaled content
-        var MAX_SIDEBAR = 220; // px cap so fonts don't grow huge on ultra-wide screens
+        var PAD = 24; // px breathing room
+        var GAP = 16; // column-gap between board and sidebar
 
         var isLandscape = window.innerWidth > window.innerHeight;
         if (isLandscape) {
@@ -368,35 +369,19 @@
           html.style.removeProperty("--sidebar-width");
         }
 
-        // Reset scale and set an initial sidebar width so the layout is correct
-        // when we take measurements below.
         html.style.setProperty("--focus-scale", "1");
 
         if (isLandscape) {
+          // Scale is driven purely by window height vs board height,
+          // so the board fills the full window height.
           var boardEl = container.querySelector(".game-container");
+          var boardH  = boardEl ? boardEl.offsetHeight : 540;
           var boardW  = boardEl ? boardEl.offsetWidth  : 500;
+          var scale   = Math.max(0.3, Math.min((window.innerHeight - PAD) / boardH, 4));
 
-          // Start with the capped sidebar, then measure the real container size.
-          var initSidebar = Math.max(80, Math.min(MAX_SIDEBAR,
-            Math.floor(window.innerWidth * 0.25)));
-          html.style.setProperty("--sidebar-width", initSidebar + "px");
-
-          // Measure the full container (board + sidebar) at scale=1 so we get
-          // the real height, which may be taller than the board alone if sidebar
-          // content stacks higher.
-          var containerH = container.offsetHeight || 540;
-          var containerW = container.offsetWidth  || 720;
-
-          // Fit the whole container inside the viewport.
-          var scale = Math.min(
-            (window.innerWidth  - PAD) / containerW,
-            (window.innerHeight - PAD) / containerH
-          );
-          scale = Math.max(0.3, Math.min(scale, 4));
-
-          // Recompute sidebar width at the chosen scale, still capped.
-          var sidebarW = Math.max(80, Math.min(MAX_SIDEBAR,
-            Math.floor((window.innerWidth - PAD) / scale - boardW - 16)));
+          // Sidebar gets all remaining horizontal space.
+          var sidebarW = Math.max(80,
+            Math.floor((window.innerWidth - PAD) / scale - boardW - GAP));
           html.style.setProperty("--sidebar-width", sidebarW + "px");
           html.style.setProperty("--focus-scale", scale);
         } else {
