@@ -99,7 +99,7 @@ DOM rendering, text sizing, overlay display.
 ### `js/tile_animations.js`
 All animation classes (`Whackamole`, `Flash`, `RiseFall`, `Appear_and_fade`, `Vibrate`).
 
-- **`Whackamole`:** `fontSize: "70%"` (relative to `fitTextToTile`-set size); `maxWidth: "60%"`; `whiteSpace: "nowrap"`; anchor range `15–85%` (tile has `overflow:hidden`).
+- **`Whackamole`:** `fontSize: "70%"` (relative to `fitTextToTile`-set size); `maxWidth: "60%"`; `whiteSpace: "normal"` + `overflowWrap: "break-word"` (allows wrapping within the 60% box); anchor range `25–75%`; text-layer set to `position:absolute; inset:0` so `overflow:hidden` clips at the true tile edge.
 - **`Flash`:** `whiteSpace: "normal"` (allows word-wrap at spaces; `fitTextToTile` ensures the widest word fits).
 - **`RiseFall`:** All dimension reads (`tileH`, `spanH`, `effectiveDuration`, position vars) are inside `tick()` — re-reads every frame, automatically adapts to window resize. `effectiveDuration = Math.round(duration * 107 / tileH)`.
 
@@ -134,6 +134,7 @@ All animation classes (`Whackamole`, `Flash`, `RiseFall`, `Appear_and_fade`, `Vi
 | Single-word text same size on mobile as desktop | `tile-new` CSS appear keyframe scales tile-inner 0→1; `getBoundingClientRect` returned ~0 → early return | Use `getComputedStyle().width`; double-rAF timing |
 | All text same size after window resize | `fitTextToTile` only ran at tile creation | Resize listener re-fits all `.tile-text-layer` elements |
 | Whackamole text overflowing tile edges | `translate(-50%,-50%)` anchor near edges pushed span outside | 70% font size + 60% maxWidth + 15–85% anchor clamping |
+| Whackamole text still overflowing (text wider than span box) | `white-space:nowrap` let text overflow the `max-width` box; text-layer had 0px height so `overflow:hidden` didn't clip | `white-space:normal` + `overflow-wrap:break-word`; text-layer set to `position:absolute;inset:0`; anchor tightened to 25–75% |
 | RiseFall wrong speed after resize | Tile dimensions read once at start | Read all dimensions inside `tick()` every frame |
 | Multi-word Flash text overflowing | `whiteSpace: nowrap` prevented word-wrap | Changed to `whiteSpace: normal` |
 | Mobile seeing cached old version | No force-reload available on mobile | `?v=<SHA>` cache-busting in deploy workflow |

@@ -269,25 +269,30 @@ var TileAnimations = {
       var fullText = element.textContent;
       element.textContent = "";
 
-      // Switch the text-layer to a block positioning context.
+      // Fill the entire tile-inner so overflow:hidden clips at the tile edge.
       element.style.display        = "block";
-      element.style.position       = "relative";
+      element.style.position       = "absolute";
+      element.style.top            = "0";
+      element.style.left           = "0";
+      element.style.width          = "100%";
+      element.style.height         = "100%";
       element.style.overflow       = "hidden";
       element.style.alignItems     = "";
       element.style.justifyContent = "";
 
       // The floating text span — absolutely positioned within element.
       var span = document.createElement("span");
-      span.textContent         = fullText;
-      span.style.position      = "absolute";
-      span.style.transform     = "translate(-50%, -50%)";
-      span.style.textAlign     = "center";
-      span.style.maxWidth      = "60%";  // 70 % font + some extra safety margin
-      span.style.fontSize      = "70%";  // 70 % of the inherited size set by fitTextToTile
-      span.style.whiteSpace    = "nowrap";
-      span.style.visibility    = "hidden";
-      span.style.opacity       = "1";
-      span.style.pointerEvents = "none";
+      span.textContent             = fullText;
+      span.style.position          = "absolute";
+      span.style.transform         = "translate(-50%, -50%)";
+      span.style.textAlign         = "center";
+      span.style.maxWidth          = "60%";
+      span.style.fontSize          = "70%";  // 70% of the fitTextToTile size
+      span.style.whiteSpace        = "normal";        // allow wrapping within maxWidth
+      span.style.overflowWrap      = "break-word";    // break any single word that is still too wide
+      span.style.visibility        = "hidden";
+      span.style.opacity           = "1";
+      span.style.pointerEvents     = "none";
 
       applyTextColor(span, resolveTextColor(params.textColor || params.color, 0));
       if (params.fontSize)   span.style.fontSize   = params.fontSize;
@@ -300,12 +305,11 @@ var TileAnimations = {
 
       // One full cycle: show → wait durationOn → hide → wait durationOff → repeat
       function cycle() {
-        // Anchor point range: 15–85% keeps the 70%-sized span well within bounds.
-        // The span is centered on the anchor (translate -50/-50), so at 15% left
-        // with a span that is at most ~60% wide, the left edge is at ~15-30% = -15%
-        // which is clipped by overflow:hidden on the element.
-        span.style.left = (15 + Math.random() * 70) + "%";
-        span.style.top  = (15 + Math.random() * 70) + "%";
+        // Anchor range 25–75%: with max-width 60% and translate(-50%,-50%)
+        // the span's edges reach at most ±30% from the anchor, so at 25% the
+        // left edge is at -5% — still clipped by overflow:hidden on the layer.
+        span.style.left = (25 + Math.random() * 50) + "%";
+        span.style.top  = (25 + Math.random() * 50) + "%";
         if (params.textColor) applyTextColor(span, resolveTextColor(params.textColor, whackColorIndex++));
 
         if (fade) {
