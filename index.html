@@ -94,6 +94,30 @@
       display: none;
     }
 
+    /* Portrait focus: tighten vertical gaps to ~20% of normal */
+    html.focus-mode:not(.landscape) .game-container {
+      margin-top: 8px !important;   /* was 40px */
+    }
+
+    html.focus-mode:not(.landscape) .heading {
+      margin-bottom: 0 !important;
+    }
+
+    html.focus-mode:not(.landscape) h1 {
+      margin-top: 4px !important;
+      margin-bottom: 4px !important;
+    }
+
+    html.focus-mode:not(.landscape) .score-container,
+    html.focus-mode:not(.landscape) .best-container {
+      margin-top: 2px !important;   /* was 8px */
+    }
+
+    html.focus-mode:not(.landscape) .above-game {
+      margin-top: 2px !important;
+      margin-bottom: 0 !important;
+    }
+
     /* Landscape focus: board left, sidebar right */
     html.focus-mode.landscape .container {
       display: grid;
