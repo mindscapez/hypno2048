@@ -126,38 +126,77 @@
       overflow: hidden;
     }
 
-    /* Collapse the heading table and shrink the H1 to fit the sidebar */
+    /* Convert all tables in the sidebar to block so cells stack vertically */
     html.focus-mode.landscape .heading table,
-    html.focus-mode.landscape .above-game table {
-      width: 100%;
-      table-layout: fixed;
+    html.focus-mode.landscape .heading tbody,
+    html.focus-mode.landscape .heading tr,
+    html.focus-mode.landscape .heading td,
+    html.focus-mode.landscape .above-game table,
+    html.focus-mode.landscape .above-game tbody,
+    html.focus-mode.landscape .above-game tr,
+    html.focus-mode.landscape .above-game td {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box;
     }
 
+    /* H1: scale with sidebar width, no overflow */
     html.focus-mode.landscape h1 {
-      font-size: calc(var(--sidebar-width, 180px) * 0.14);
+      font-size: calc(var(--sidebar-width, 180px) * 0.16) !important;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin: 0;
+      margin: 0 0 4px 0;
+      line-height: 1.2;
     }
 
+    /* Scores: stack Score + Best vertically, each as a flex column */
     html.focus-mode.landscape .scores-container {
       float: none !important;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
+      display: flex !important;
+      flex-direction: column;
       gap: 4px;
       margin-top: 4px;
     }
 
     html.focus-mode.landscape .score-container,
     html.focus-mode.landscape .best-container {
-      padding: 6px 8px;
-      font-size: 13px;
-      height: auto;
-      line-height: 1.4;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: auto !important;
+      line-height: 1.2 !important;
+      padding: 4px 6px !important;
+      font-size: calc(var(--sidebar-width, 180px) * 0.11) !important;
       min-width: 0;
-      flex: 1 1 0;
+      margin-top: 0 !important;
+    }
+
+    /* Make the ::after label (SCORE / BEST) stack above the number */
+    html.focus-mode.landscape .score-container::after,
+    html.focus-mode.landscape .best-container::after {
+      position: static !important;
+      order: -1;
+      font-size: calc(var(--sidebar-width, 180px) * 0.075) !important;
+      line-height: 1.2 !important;
+      width: auto !important;
+    }
+
+    /* Buttons and selects: full width, stacked, scaled font */
+    html.focus-mode.landscape .restart-button,
+    html.focus-mode.landscape .theme-mode-select,
+    html.focus-mode.landscape #focus-btn {
+      display: block !important;
+      float: none !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      margin: 0 0 4px 0 !important;
+      height: auto !important;
+      line-height: 1.4 !important;
+      padding: 4px 8px !important;
+      font-size: calc(var(--sidebar-width, 180px) * 0.085) !important;
+      text-align: center;
     }
 
     /* ── Full-board deepen overlay ────────────────────────────────────── */
